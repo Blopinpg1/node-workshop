@@ -85,6 +85,14 @@ app.delete("/delete-blog/:id", async(req, res)=>{
   })
 })
 
+app.delete("/delete-blog", async(req,res)=>{
+  const {id} = req.body;
+  await Blog.findByIdAndDelete(id);
+  res.json({
+    message : "Blog deleted successfully",
+  });
+});
+
 
 
 
