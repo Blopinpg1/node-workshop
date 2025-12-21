@@ -1,16 +1,11 @@
-// console.log("dfd");
-// console.log("dslfjjsdlkfjslkdf");
-
-// import express from "express";
-// import env from "dotenv";
-
 const express = require("express");
 const dbConnect = require("./database/connection.js");
 const User = require("./models/userModel.js");
 const Blog = require("./models/blog.js");
 
-// env.config();
+require("dotenv").config(); //.config() le .env file ma vako data load garxa process.env ma
 dbConnect(); //database connect garne function call
+
 const app = express();
 const bcrypt = require("bcrypt");
 
@@ -39,7 +34,7 @@ app.get("/fetch-users", async (req, res) => {
   });
 });
 
-app.get("/fetch-blog", async (req, res) => {
+app.get("/fetch-blogs", async (req, res) => {
   const blogData = await Blog.find();
   res.json({
     blogData: blogData,
@@ -75,52 +70,107 @@ app.post("/create-blog", async (req, res) => {
   });
 });
 
-app.delete("/delete-blog/:id", async(req, res)=>{
+app.delete("/delete-blog/:id", async (req, res) => {
   const id = req.params.id;
   await Blog.findByIdAndDelete(id);
-  
 
   res.json({
-   message:"blog deleted successfully",
-  })
-})
-
-app.delete("/delete-blog", async(req,res)=>{
-  const {id} = req.body;
-  await Blog.findByIdAndDelete(id);
-  res.json({
-    message : "Blog deleted successfully",
+    message: "blog deleted successfully",
   });
 });
 
+app.delete("/delete-blog", async (req, res) => {
+  const { id } = req.body;
+  await Blog.findByIdAndDelete(id);
+  res.json({
+    message: "Blog deleted successfully",
+  });
+});
+app.get("/fetch-blogs/:id", async (req, res) => {
+  const id = req.params.id;
+  const blogData = await Blog.findById(id).select(["subtitle"]);
+  res.json({
+    data: blogData,
+  });
+});
 
-
+app.patch("/update-blogs/:id", async (req, res) => {
+  const id = req.params.id;
+  const { name, subtitle, description } = req.body;
+  await Blog.findByIdAndUpdate(id, {
+    name,
+    subtitle,
+    description,
+  });
+  res.json({
+    message: "blog updated successfully",
+  });
+});
 
 app.delete("/delete-user/:id", async (req, res) => {
   const id = req.params.id;
   await User.findByIdAndDelete(id);
   console.log(req.params.id);
 
-
   res.json({
     message: "User deleted successfully",
   });
 });
 
-
-app.delete("/delete", async(req,res)=>{
-  const {id} = req.body;
-  await User.findByIdAndDelete(id); 
+app.delete("/delete", async (req, res) => {
+  const { id } = req.body;
+  await User.findByIdAndDelete(id);
   res.json({
-    message : "User deleted",
+    message: "User deleted",
   });
+});
 
-})
+app.get("/fetch-users/:id", async (req, res) => {
+  const id = req.params.id;
+  const data = await User.findById(id).select(["-password", "-__v"]);
+  res.json({
+    data: data,
+  });
+});
 
+app.patch("/update-user/:id", async (req, res) => {
+  const id = req.params.id;
+  // const name = req.body.name;
+  const { name, email, password } = req.body;
+  await User.findByIdAndUpdate(id, {
+    name,
+    email,
+    password: bcrypt.hashSync(password, 10),
+  });
+  res.json({
+    message: "user updated successfully",
+  });
+});
 
+//login
+
+app.post("/login", async (req, res) => {
+  const { email, password } = req.body;
+  const data = await User.findOne({ email: email }); //data is the object with user details
+  console.log(data);
+  if (!data) {
+    res.json({
+      message: "Not registered",
+    });
+  } else {
+    const isMatched = bcrypt.compareSync(password, data.password); // hashed and compare the password hash and returns a boolean (true or false ) which is used to pass the message
+    if (isMatched) {
+      res.json({
+        message: "login successful",
+      });
+    } else {
+      res.json({
+        message: "Invalid password",
+      });
+    }
+  }
+});
 
 app.listen(3000, () => {
   console.log("Server running on port:" + 3000);
 });
-
-//  mongodb+srv://nodejsworkshop:<db_password>@cluster0.9dvqmkv.mongodb.net/?appName=Cluster0
